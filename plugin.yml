@@ -1,0 +1,10 @@
+  name: BossBarAPI
+  main: xenialdan.BossBarAPI.Main
+  version: 3.0.1
+  api: [1.0.0]
+  load: POSTWORLD
+  authors: [XenialDan]
+  commands:
+    보스바:
+      usage: /보스바 [args...]
+      description: 보스바 명령어

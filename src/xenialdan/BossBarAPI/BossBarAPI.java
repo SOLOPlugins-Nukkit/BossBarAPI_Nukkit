@@ -16,6 +16,7 @@ public class BossBarAPI {
 
 	public static boolean unregisterBossBar(String owner){
 		if(bossBarList.containsKey(owner)){
+			bossBarList.get(owner).setVisible(false);
 			bossBarList.remove(owner);
 			return true;
 		}

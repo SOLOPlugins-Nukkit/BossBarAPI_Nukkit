@@ -1,42 +1,32 @@
 package xenialdan.BossBarAPI;
 
 import cn.nukkit.Player;
-import cn.nukkit.network.protocol.DataPacket;
 import cn.nukkit.network.protocol.RemoveEntityPacket;
 import cn.nukkit.Server;
 import cn.nukkit.network.protocol.SetEntityDataPacket;
+import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import cn.nukkit.network.protocol.AddEntityPacket;
+import cn.nukkit.network.protocol.BossEventPacket;
+import cn.nukkit.entity.Attribute;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.data.EntityMetadata;
 import cn.nukkit.network.protocol.MoveEntityPacket;
-import cn.nukkit.level.Location;
-
-import xenialdan.BossBarAPI.network.BossBarValues;
-import xenialdan.BossBarAPI.network.BossEventPacket;
-import xenialdan.BossBarAPI.network.EventPacket;
-import xenialdan.BossBarAPI.network.UpdateAttributesPacket;
-
-import java.util.Collection;
-import java.util.HashSet;
 
 public abstract class PacketAPI{
 
 	public static void broadcastBossBar(int eid, String title){
-		HashSet<Player> players = new HashSet<Player>();
 		for(Player o : Server.getInstance().getOnlinePlayers().values()){
 			sendBossBar(o, eid, title);
 		}
 	}
 
 	public static void broadcastPercentage(int eid, double percentage){
-		HashSet<Player> players = new HashSet<Player>();
 		for(Player o : Server.getInstance().getOnlinePlayers().values()){
 			sendPercentage(o, eid, percentage);
 		}
 	}
 
 	public static void broadcastTitle(int eid, String title){
-		HashSet<Player> players = new HashSet<Player>();
 		for(Player o : Server.getInstance().getOnlinePlayers().values()){
 			sendTitle(o, eid, title);
 		}
@@ -65,15 +55,22 @@ public abstract class PacketAPI{
 		packet.entityUniqueId = eid;
 		packet.entityRuntimeId = eid;
 		packet.type = 52;
-		packet.yaw = 0;
-		packet.pitch = 0;
-		EntityMetadata dataProperties= new EntityMetadata();
-		dataProperties.putLong(Entity.DATA_LEAD_HOLDER_EID, -1);
-		dataProperties.putLong(Entity.DATA_FLAGS, 0 ^ 1 << Entity.DATA_FLAG_SILENT ^ 1 << Entity.DATA_FLAG_INVISIBLE ^ 1 << Entity.DATA_FLAG_NO_AI);
-		dataProperties.putFloat(Entity.DATA_SCALE, 0);
-		dataProperties.putString(Entity.DATA_NAMETAG, title);
-		dataProperties.putFloat(Entity.DATA_BOUNDING_BOX_WIDTH, 0);
-		dataProperties.putFloat(Entity.DATA_BOUNDING_BOX_HEIGHT, 0);
+		packet.yaw = packet.pitch = 0;
+		
+		long flags = 0;
+		flags |= 1 << Entity.DATA_FLAG_SILENT;
+		flags |= 1 << Entity.DATA_FLAG_INVISIBLE;
+		flags |= 1 << Entity.DATA_FLAG_NO_AI;
+		
+		EntityMetadata dataProperties = new EntityMetadata()
+				.putLong(Entity.DATA_FLAGS, flags)
+				.putShort(Entity.DATA_AIR, 400)
+				.putShort(Entity.DATA_MAX_AIR, 400)
+				.putLong(Entity.DATA_LEAD_HOLDER_EID, -1)
+				.putFloat(Entity.DATA_SCALE, 1f)
+				.putString(Entity.DATA_NAMETAG, title)
+				.putInt(Entity.DATA_SCALE, 0);
+		
 		packet.metadata = dataProperties;
 		packet.x = (float) player.x;
 		packet.y = (float) (player.y - 28);
@@ -82,7 +79,7 @@ public abstract class PacketAPI{
 		
 		BossEventPacket bpk = new BossEventPacket(); // This updates the bar
 		bpk.eid = eid;
-		bpk.state = 0;
+		bpk.type = 0;
 		player.dataPacket(bpk);
 	}
 
@@ -94,33 +91,23 @@ public abstract class PacketAPI{
 	 * @param int eid 
 	 */
 	public static void sendPercentage(Player player, int eid, double percentage){
-		UpdateAttributesPacket upk = new UpdateAttributesPacket(); // Change health of fake wither . bar progress
 		if(percentage > 100){
 			percentage = 100;
 		}
 		if(percentage < 0){
 			percentage = 0;
 		}
-		BossBarValues newV = new BossBarValues(0, 600, (float) (percentage * 6), "minecraft:health"); // Ensures that the number is between 0 and 100;
-		BossBarValues[] newEntries;
-		if(upk.entries.length > 0){
-			int c = 0;
-			newEntries = new BossBarValues[upk.entries.length];
-			for(BossBarValues v : upk.entries){
-				newEntries[c++] = v;
-			}
-			newEntries[c++] = newV;
-		}else{
-			newEntries = new BossBarValues[1];
-			newEntries[0] = newV;
-		}
-		upk.entries = newEntries;
-		upk.eid = eid;
+		UpdateAttributesPacket upk = new UpdateAttributesPacket(); // Change health of fake wither . bar progress
+		upk.entityId = eid;
+		Attribute attr = Attribute.getAttribute(Attribute.MAX_HEALTH);
+		attr.setMaxValue(100);
+		attr.setValue((float) percentage);
+		upk.entries = new Attribute[]{ attr };
 		player.dataPacket(upk);
 		
 		BossEventPacket bpk = new BossEventPacket(); // This updates the bar
 		bpk.eid = eid;
-		bpk.state = 0;
+		bpk.type = 1; // UPDATE
 		player.dataPacket(bpk);
 	}
 
@@ -132,15 +119,28 @@ public abstract class PacketAPI{
 	 */
 	public static void sendTitle(Player player, int eid, String title){
 		SetEntityDataPacket npk = new SetEntityDataPacket(); // change name of fake wither . bar text
-		EntityMetadata dataProperties= new EntityMetadata();
-		dataProperties.putString(Entity.DATA_NAMETAG, title);
+		
+		long flags = 0;
+		flags |= 1 << Entity.DATA_FLAG_SILENT;
+		flags |= 1 << Entity.DATA_FLAG_INVISIBLE;
+		flags |= 1 << Entity.DATA_FLAG_NO_AI;
+		
+		EntityMetadata dataProperties = new EntityMetadata()
+				.putLong(Entity.DATA_FLAGS, flags)
+				.putShort(Entity.DATA_AIR, 400)
+				.putShort(Entity.DATA_MAX_AIR, 400)
+				.putLong(Entity.DATA_LEAD_HOLDER_EID, -1)
+				.putFloat(Entity.DATA_SCALE, 1f)
+				.putString(Entity.DATA_NAMETAG, title)
+				.putInt(Entity.DATA_SCALE, 0);
+		
 		npk.metadata = dataProperties;
 		npk.eid = eid;
 		player.dataPacket(npk);
 		
 		BossEventPacket bpk = new BossEventPacket(); // This updates the bar
 		bpk.eid = eid;
-		bpk.state = 0;
+		bpk.type = 1; // UPDATE
 		player.dataPacket(bpk);
 	}
 
@@ -161,17 +161,17 @@ public abstract class PacketAPI{
 	/**
 	 * Handle player movement
 	 *
-	 * @param Location pos
+	 * @param Position pos
 	 * @param unknown eid 
 	 * @return MoveEntityPacket pk
 	 */
-	public static DataPacket playerMove(Location pos, int eid){
+	public static void updateMove(Player player, int eid){
 		MoveEntityPacket pk = new MoveEntityPacket();
-		pk.x = (float) pos.x;
-		pk.y = (float) (pos.y - 28);
-		pk.z = (float) pos.z;
+		pk.x = (float) player.x;
+		pk.y = (float) (player.y - 28);
+		pk.z = (float) player.z;
 		pk.eid = eid;
 		pk.yaw = pk.pitch = pk.headYaw = 0;
-		return pk.clone();
+		player.dataPacket(pk);
 	}
 }

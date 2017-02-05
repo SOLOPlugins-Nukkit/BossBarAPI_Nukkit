@@ -13,9 +13,6 @@ import cn.nukkit.Player;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.plugin.PluginBase;
-import cn.nukkit.Server;
-import cn.nukkit.network.protocol.SetEntityDataPacket;
-import cn.nukkit.entity.Entity;
 import cn.nukkit.event.player.PlayerPreLoginEvent;
 import cn.nukkit.event.player.PlayerTeleportEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
@@ -24,15 +21,14 @@ import cn.nukkit.event.player.PlayerMoveEvent;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.network.protocol.BossEventPacket;
+import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import cn.nukkit.utils.Config;
 
-import xenialdan.BossBarAPI.network.BossEventPacket;
-import xenialdan.BossBarAPI.network.UpdateAttributesPacket;
 import xenialdan.BossBarAPI.task.BossBarTask;
 
 import java.util.LinkedHashMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.io.File;
 
 public class Main extends PluginBase implements Listener{
